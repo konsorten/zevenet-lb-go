@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+type genericResponse struct {
+	Description string `json:"description"`
+}
+
 type farmListResponse struct {
 	Description string     `json:"description"`
 	Params      []FarmInfo `json:"params"`
@@ -95,6 +99,31 @@ func (b *ZapiSession) GetFarmDetails(farmName string) (*FarmDetails, error) {
 	}
 
 	return &result.Params, nil
+}
+
+type farmAction struct {
+	Action string `json:"action"`
+}
+
+// StartFarm will start a stopped farm.
+func (b *ZapiSession) StartFarm(farmName string) error {
+	req := farmAction{Action: "start"}
+
+	return b.put(req, "farms", farmName, "actions")
+}
+
+// StopFarm will stop a running farm.
+func (b *ZapiSession) StopFarm(farmName string) error {
+	req := farmAction{Action: "stop"}
+
+	return b.put(req, "farms", farmName, "actions")
+}
+
+// RestartFarm will restart a running farm.
+func (b *ZapiSession) RestartFarm(farmName string) error {
+	req := farmAction{Action: "restart"}
+
+	return b.put(req, "farms", farmName, "actions")
 }
 
 type CertificateInfo struct {

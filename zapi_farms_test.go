@@ -17,7 +17,7 @@ func TestGetAllFarms(t *testing.T) {
 		t.Fatal("No farms returned")
 	}
 
-	t.Logf("Farms: %v", res)
+	//t.Logf("Farms: %v", res)
 
 	// get the farm details
 	for _, f := range res {
