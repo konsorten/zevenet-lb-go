@@ -37,7 +37,7 @@ func TestGetAllFarms(t *testing.T) {
 			t.Logf("  Service: %v", s)
 
 			for _, b := range s.Backends {
-				t.Logf("  Backend: %v", b)
+				t.Logf("    Backend: %v", b)
 			}
 		}
 	}
