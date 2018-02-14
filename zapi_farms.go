@@ -48,8 +48,8 @@ type farmDetailsResponse struct {
 type FarmDetails struct {
 	Certificates             []CertificateInfo `json:"certlist"`
 	FarmName                 string            `json:"farmname"`
-	CiphersCustom            string            `json:"cipherc"`
-	Ciphers                  string            `json:"ciphers"`
+	CiphersCustom            string            `json:"cipherc,omitempty"`
+	Ciphers                  string            `json:"ciphers,omitempty"`
 	ConnectionTimeoutSeconds int               `json:"contimeout"`
 	DisableSSLv2             bool              `json:"disable_sslv2,string"`
 	DisableSSLv3             bool              `json:"disable_sslv3,string"`
@@ -82,13 +82,28 @@ func (sv *FarmDetails) IsHTTP() bool {
 	return strings.HasPrefix(sv.Listener, "http")
 }
 
-// GetFarmDetails returns details on a specific farm.
-func (b *ZapiSession) GetFarmDetails(farmName string) (*FarmDetails, error) {
+// IsRunning checks if the farm is up and running.
+func (sv *FarmDetails) IsRunning() bool {
+	return sv.Status == "up"
+}
+
+// IsRestartRequired checks if the farm needs to be restartet.
+func (sv *FarmDetails) IsRestartRequired() bool {
+	return sv.Status == "needed restart"
+}
+
+// GetFarm returns details on a specific farm.
+func (b *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
 	var result *farmDetailsResponse
 
 	err, _ := b.getForEntity(&result, "farms", farmName)
 
 	if err != nil {
+		// farm not found?
+		if strings.Contains(err.Error(), "Farm not found") {
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
@@ -99,6 +114,87 @@ func (b *ZapiSession) GetFarmDetails(farmName string) (*FarmDetails, error) {
 	}
 
 	return &result.Params, nil
+}
+
+// DeleteFarm will delete an existing farm (or do nothing if missing)
+func (b *ZapiSession) DeleteFarm(farmName string) (bool, error) {
+	// retrieve farm details
+	farm, err := b.GetFarm(farmName)
+
+	if err != nil {
+		return false, err
+	}
+
+	// farm does not exist?
+	if farm == nil {
+		return false, nil
+	}
+
+	// delete the farm
+	return true, b.delete("farms", farmName)
+}
+
+type farmCreate struct {
+	FarmName    string `json:"farmname"`
+	Profile     string `json:"profile"`
+	VirtualIP   string `json:"vip"`
+	VirtualPort int    `json:"vport"`
+}
+
+// CreateFarmAsHTTP creates a new HTTP farm.
+func (b *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtualPort int) (*FarmDetails, error) {
+	// set default HTTP port
+	if virtualPort <= 0 {
+		virtualPort = 80
+	}
+
+	// create the farm
+	req := farmCreate{
+		FarmName:    farmName,
+		Profile:     "http",
+		VirtualIP:   virtualIP,
+		VirtualPort: virtualPort,
+	}
+
+	err := b.post(req, "farms")
+
+	if err != nil {
+		return nil, err
+	}
+
+	// retrieve status
+	return b.GetFarm(farmName)
+}
+
+// CreateFarmAsHTTPS creates a new HTTPS farm.
+func (b *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtualPort int, certFilename string) (*FarmDetails, error) {
+	// set default HTTPS port
+	if virtualPort <= 0 {
+		virtualPort = 443
+	}
+
+	// create the farm
+	farm, err := b.CreateFarmAsHTTP(farmName, virtualIP, virtualPort)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// update the farm
+	farm.Listener = "https"
+	farm.Ciphers = "highsecurity"
+	farm.DisableSSLv2 = false
+	farm.DisableSSLv3 = false
+	farm.DisableTLSv1 = false
+
+	b.UpdateFarm(farm)
+
+	return farm, nil
+}
+
+// UpdateFarm updates the HTTP/S farm.
+func (b *ZapiSession) UpdateFarm(farm *FarmDetails) error {
+	return b.put(farm, "farms", farm.FarmName)
 }
 
 type farmAction struct {
