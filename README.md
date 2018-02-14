@@ -4,6 +4,18 @@ xxxx
 
 **[Click here to open the GoDoc documentation.](https://godoc.org/github.com/konsorten/zevenet-lb-go)**
 
+## Usage
+
+To use the API, simply create a new session:
+
+```go
+import zevenet "github.com/konsorten/zevenet-lb-go"
+
+session := zevenet.NewSession("myloadbalancer:444", "zapi-key", nil)
+
+version := session.GetSystemVersion()
+```
+
 ## ZAPI Key
 
 The API key for the Zevenet CE API can be retrieved using the web interface:
