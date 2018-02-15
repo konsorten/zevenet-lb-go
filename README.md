@@ -13,9 +13,11 @@ To use the API, simply create a new session:
 ```go
 import zevenet "github.com/konsorten/zevenet-lb-go"
 
-session := zevenet.Connect("myloadbalancer:444", "zapi-key", nil)
+func main() {
+    session, _ := zevenet.Connect("myloadbalancer:444", "zapi-key", nil)
 
-version, _ := session.GetSystemVersion()
+    version, _ := session.GetSystemVersion()
+}
 ```
 
 ## ZAPI Key

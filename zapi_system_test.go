@@ -28,20 +28,34 @@ func createTestSessionEx(t *testing.T, apiKey string) *ZapiSession {
 	}
 
 	// create the session
-	return Connect(host, apiKey, nil)
+	session, err := Connect(host, apiKey, nil)
+
+	if err != nil {
+		t.Fatalf("Failed to connect to Zevenet API: %v", err)
+	}
+
+	return session
 }
 
-func TestInvalidApiKey(t *testing.T) {
-	session := createTestSessionEx(t, "inval1dAp1K3y")
-
-	_, err := session.GetSystemVersion()
+func TestInvalidHost(t *testing.T) {
+	_, err := Connect("d0esn0tex1st", "inval1dAp1K3y", nil)
 
 	if err == nil {
 		t.Fatal("Error expected")
 	}
 
-	if !strings.Contains(err.Error(), "Authorization required") {
+	if !strings.Contains(err.Error(), "no such host") {
 		t.Fatalf("Wrong error message returned: %v", err)
+	}
+}
+
+func TestPing(t *testing.T) {
+	session := createTestSession(t)
+
+	success, msg := session.Ping()
+
+	if !success {
+		t.Fatalf("Ping failed: %v", msg)
 	}
 }
 

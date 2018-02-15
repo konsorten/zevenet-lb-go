@@ -60,7 +60,7 @@ func (r *RequestError) Error() error {
 }
 
 // Connect sets up our connection to the Zevenet system.
-func Connect(host, zapiKey string, configOptions *ConfigOptions) *ZapiSession {
+func Connect(host, zapiKey string, configOptions *ConfigOptions) (*ZapiSession, error) {
 	var url string
 	if !strings.HasPrefix(host, "http") {
 		url = fmt.Sprintf("https://%s", host)
@@ -72,7 +72,7 @@ func Connect(host, zapiKey string, configOptions *ConfigOptions) *ZapiSession {
 	}
 
 	// create the session
-	return &ZapiSession{
+	session := &ZapiSession{
 		Host:    url,
 		ZapiKey: zapiKey,
 		Transport: &http.Transport{
@@ -82,6 +82,34 @@ func Connect(host, zapiKey string, configOptions *ConfigOptions) *ZapiSession {
 		},
 		ConfigOptions: configOptions,
 	}
+
+	// initialize the session
+	err := session.initialize()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// done
+	return session, nil
+}
+
+func (s *ZapiSession) initialize() (err error) {
+	// test connection
+	_, err = s.GetSystemVersion()
+	return
+}
+
+// Ping checks if the loadbalancer is available.
+func (s *ZapiSession) Ping() (bool, string) {
+	// test connection
+	_, err := s.GetSystemVersion()
+
+	if err != nil {
+		return false, err.Error()
+	}
+
+	return true, ""
 }
 
 // apiCall is used to query the ZAPI.
