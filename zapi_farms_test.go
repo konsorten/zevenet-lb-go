@@ -182,15 +182,37 @@ func TestRoundtripHTTPFarm(t *testing.T) {
 		t.Fatalf("Expected the status message to contain '%v', but got '%v'", resBodyExpect, resBody)
 	}
 
-	// done, delete the farm
-	deleted, err := session.DeleteFarm(farm.FarmName)
+	// cleaning up, delete the backend
+	deleted, err := session.DeleteBackend(farm.FarmName, service.ServiceName, backend.ID)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !deleted {
-		t.Fatal("Expected deleting to succeed, but failed")
+		t.Fatal("Expected deleting the backend to succeed, but failed")
+	}
+
+	// delete the service
+	deleted, err = session.DeleteService(farm.FarmName, service.ServiceName)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !deleted {
+		t.Fatal("Expected deleting the service to succeed, but failed")
+	}
+
+	// done, delete the farm
+	deleted, err = session.DeleteFarm(farm.FarmName)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !deleted {
+		t.Fatal("Expected deleting the farm to succeed, but failed")
 	}
 }
 
@@ -272,8 +294,17 @@ func TestRoundtripHTTPSFarm(t *testing.T) {
 
 	t.Logf("Service: %v", service)
 
+	// enable backend re-encryption
+	service.EncryptedBackends = true
+
+	err = session.UpdateService(service)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// add a backend
-	backend, err := session.CreateBackend(farm.FarmName, service.ServiceName, "176.58.123.25", 80)
+	backend, err := session.CreateBackend(farm.FarmName, service.ServiceName, "176.58.123.25", 443)
 
 	if err != nil {
 		t.Fatal(err)
@@ -306,8 +337,30 @@ func TestRoundtripHTTPSFarm(t *testing.T) {
 		t.Fatalf("Expected the status message to contain '%v', but got '%v'", resBodyExpect, resBody)
 	}
 
+	// cleaning up, delete the backend
+	deleted, err := session.DeleteBackend(farm.FarmName, service.ServiceName, backend.ID)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !deleted {
+		t.Fatal("Expected deleting the backend to succeed, but failed")
+	}
+
+	// delete the service
+	deleted, err = session.DeleteService(farm.FarmName, service.ServiceName)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !deleted {
+		t.Fatal("Expected deleting the service to succeed, but failed")
+	}
+
 	// done, delete the farm
-	deleted, err := session.DeleteFarm(farm.FarmName)
+	deleted, err = session.DeleteFarm(farm.FarmName)
 
 	if err != nil {
 		t.Fatal(err)

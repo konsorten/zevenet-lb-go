@@ -2,6 +2,7 @@ package zevenetlb
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -212,6 +213,19 @@ func (s *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
 	if result != nil {
 		result.Params.FarmName = farmName
 		result.Params.Services = result.Services
+
+		for s := range result.Params.Services {
+			service := &result.Params.Services[s]
+
+			service.FarmName = farmName
+
+			for b := range service.Backends {
+				backend := &service.Backends[b]
+
+				backend.FarmName = farmName
+				backend.ServiceName = service.ServiceName
+			}
+		}
 	}
 
 	return &result.Params, nil
@@ -401,6 +415,7 @@ type ServiceDetails struct {
 	URLPattern                          string                     `json:"urlp"`
 	HostPattern                         string                     `json:"vhost"`
 	Backends                            []BackendDetails           `json:"backends"`
+	FarmName                            string                     `json:"farmname"`
 }
 
 // String returns the services' name.
@@ -434,6 +449,35 @@ type serviceCreate struct {
 	ServiceName string `json:"id"`
 }
 
+// DeleteService will delete an existing service (or do nothing if service or farm is missing)
+func (s *ZapiSession) DeleteService(farmName string, serviceName string) (bool, error) {
+	// retrieve farm details
+	farm, err := s.GetFarm(farmName)
+
+	if err != nil {
+		return false, err
+	}
+
+	// farm does not exist?
+	if farm == nil {
+		return false, nil
+	}
+
+	// does the service exist?
+	service, err := farm.GetService(serviceName)
+
+	if err != nil {
+		return false, err
+	}
+
+	if service == nil {
+		return false, nil
+	}
+
+	// delete the service
+	return true, s.delete("farms", farmName, "services", serviceName)
+}
+
 // CreateService creates a new service on a farm.
 func (s *ZapiSession) CreateService(farmName string, serviceName string) (*ServiceDetails, error) {
 	// create the service
@@ -455,6 +499,12 @@ func (s *ZapiSession) CreateService(farmName string, serviceName string) (*Servi
 	}
 
 	return farm.GetService(serviceName)
+}
+
+// UpdateService updates a service on a farm.
+// This method does *not* update the *backends*. Use *UpdateBackend()* instead.
+func (s *ZapiSession) UpdateService(service *ServiceDetails) error {
+	return s.put(service, "farms", service.FarmName, "services", service.ServiceName)
 }
 
 type backendDetailsResponse struct {
@@ -485,8 +535,10 @@ type BackendDetails struct {
 	IPAddress      string        `json:"ip"`
 	Port           int           `json:"port"`
 	Status         BackendStatus `json:"status"`
-	TimeoutSeconds *int          `json:"timeout"`
-	Weight         *int          `json:"weight"`
+	TimeoutSeconds *int          `json:"timeout,omitempty"`
+	Weight         *int          `json:"weight,omitempty"`
+	FarmName       string        `json:"farmname"`
+	ServiceName    string        `json:"servicename"`
 }
 
 // String returns the backend's IP, port, ID, and status.
@@ -497,6 +549,46 @@ func (bd BackendDetails) String() string {
 type backendCreate struct {
 	IPAddress string `json:"ip"`
 	Port      int    `json:"port"`
+}
+
+// DeleteBackend will delete an existing backend (or do nothing if backend or service or farm is missing)
+func (s *ZapiSession) DeleteBackend(farmName string, serviceName string, backendId int) (bool, error) {
+	// retrieve farm details
+	farm, err := s.GetFarm(farmName)
+
+	if err != nil {
+		return false, err
+	}
+
+	// farm does not exist?
+	if farm == nil {
+		return false, nil
+	}
+
+	// does the service exist?
+	service, err := farm.GetService(serviceName)
+
+	if err != nil {
+		return false, err
+	}
+
+	if service == nil {
+		return false, nil
+	}
+
+	// does the backend exist?
+	backend, err := service.GetBackend(backendId)
+
+	if err != nil {
+		return false, err
+	}
+
+	if backend == nil {
+		return false, nil
+	}
+
+	// delete the backend
+	return true, s.delete("farms", farmName, "services", serviceName, "backends", strconv.Itoa(backendId))
 }
 
 // CreateBackend creates a new backend on a service on a farm.
@@ -527,4 +619,9 @@ func (s *ZapiSession) CreateBackend(farmName string, serviceName string, backend
 	}
 
 	return service.GetBackendByAddress(backendIP, backendPort)
+}
+
+// UpdateBackend updates a backend on a service on a farm.
+func (s *ZapiSession) UpdateBackend(backend *BackendDetails) error {
+	return s.put(backend, "farms", backend.FarmName, "services", backend.ServiceName, "backends", strconv.Itoa(backend.ID))
 }
