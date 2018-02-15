@@ -28,7 +28,7 @@ func createTestSessionEx(t *testing.T, apiKey string) *ZapiSession {
 	}
 
 	// create the session
-	return NewSession(host, apiKey, nil)
+	return Connect(host, apiKey, nil)
 }
 
 func TestInvalidApiKey(t *testing.T) {

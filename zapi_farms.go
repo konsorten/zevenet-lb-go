@@ -24,11 +24,16 @@ type FarmInfo struct {
 	VirtualPort int    `json:"vport,string"`
 }
 
+// String returns the farm's name and profile.
+func (fi *FarmInfo) String() string {
+	return fmt.Sprintf("%v (%v)", fi.FarmName, fi.Profile)
+}
+
 // GetAllFarms returns list os all available farms.
-func (b *ZapiSession) GetAllFarms() ([]FarmInfo, error) {
+func (s *ZapiSession) GetAllFarms() ([]FarmInfo, error) {
 	var result *farmListResponse
 
-	err, _ := b.getForEntity(&result, "farms")
+	err := s.getForEntity(&result, "farms")
 
 	if err != nil {
 		return nil, err
@@ -73,30 +78,30 @@ type FarmDetails struct {
 }
 
 // String returns the farm's name and listener.
-func (sv *FarmDetails) String() string {
-	return fmt.Sprintf("%v (%v)", sv.FarmName, sv.Listener)
+func (fd *FarmDetails) String() string {
+	return fmt.Sprintf("%v (%v)", fd.FarmName, fd.Listener)
 }
 
 // IsHTTP checks if the farm has HTTP or HTTPS support enabled.
-func (sv *FarmDetails) IsHTTP() bool {
-	return strings.HasPrefix(sv.Listener, "http")
+func (fd *FarmDetails) IsHTTP() bool {
+	return strings.HasPrefix(fd.Listener, "http")
 }
 
 // IsRunning checks if the farm is up and running.
-func (sv *FarmDetails) IsRunning() bool {
-	return sv.Status == "up"
+func (fd *FarmDetails) IsRunning() bool {
+	return fd.Status == "up"
 }
 
 // IsRestartRequired checks if the farm needs to be restartet.
-func (sv *FarmDetails) IsRestartRequired() bool {
-	return sv.Status == "needed restart"
+func (fd *FarmDetails) IsRestartRequired() bool {
+	return fd.Status == "needed restart"
 }
 
 // GetFarm returns details on a specific farm.
-func (b *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
+func (s *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
 	var result *farmDetailsResponse
 
-	err, _ := b.getForEntity(&result, "farms", farmName)
+	err := s.getForEntity(&result, "farms", farmName)
 
 	if err != nil {
 		// farm not found?
@@ -117,9 +122,9 @@ func (b *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
 }
 
 // DeleteFarm will delete an existing farm (or do nothing if missing)
-func (b *ZapiSession) DeleteFarm(farmName string) (bool, error) {
+func (s *ZapiSession) DeleteFarm(farmName string) (bool, error) {
 	// retrieve farm details
-	farm, err := b.GetFarm(farmName)
+	farm, err := s.GetFarm(farmName)
 
 	if err != nil {
 		return false, err
@@ -131,7 +136,7 @@ func (b *ZapiSession) DeleteFarm(farmName string) (bool, error) {
 	}
 
 	// delete the farm
-	return true, b.delete("farms", farmName)
+	return true, s.delete("farms", farmName)
 }
 
 type farmCreate struct {
@@ -142,7 +147,7 @@ type farmCreate struct {
 }
 
 // CreateFarmAsHTTP creates a new HTTP farm.
-func (b *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtualPort int) (*FarmDetails, error) {
+func (s *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtualPort int) (*FarmDetails, error) {
 	// set default HTTP port
 	if virtualPort <= 0 {
 		virtualPort = 80
@@ -156,25 +161,25 @@ func (b *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtua
 		VirtualPort: virtualPort,
 	}
 
-	err := b.post(req, "farms")
+	err := s.post(req, "farms")
 
 	if err != nil {
 		return nil, err
 	}
 
 	// retrieve status
-	return b.GetFarm(farmName)
+	return s.GetFarm(farmName)
 }
 
 // CreateFarmAsHTTPS creates a new HTTPS farm.
-func (b *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtualPort int, certFilename string) (*FarmDetails, error) {
+func (s *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtualPort int, certFilename string) (*FarmDetails, error) {
 	// set default HTTPS port
 	if virtualPort <= 0 {
 		virtualPort = 443
 	}
 
 	// create the farm
-	farm, err := b.CreateFarmAsHTTP(farmName, virtualIP, virtualPort)
+	farm, err := s.CreateFarmAsHTTP(farmName, virtualIP, virtualPort)
 
 	if err != nil {
 		return nil, err
@@ -187,14 +192,14 @@ func (b *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtu
 	farm.DisableSSLv3 = false
 	farm.DisableTLSv1 = false
 
-	b.UpdateFarm(farm)
+	s.UpdateFarm(farm)
 
 	return farm, nil
 }
 
 // UpdateFarm updates the HTTP/S farm.
-func (b *ZapiSession) UpdateFarm(farm *FarmDetails) error {
-	return b.put(farm, "farms", farm.FarmName)
+func (s *ZapiSession) UpdateFarm(farm *FarmDetails) error {
+	return s.put(farm, "farms", farm.FarmName)
 }
 
 type farmAction struct {
@@ -202,26 +207,27 @@ type farmAction struct {
 }
 
 // StartFarm will start a stopped farm.
-func (b *ZapiSession) StartFarm(farmName string) error {
+func (s *ZapiSession) StartFarm(farmName string) error {
 	req := farmAction{Action: "start"}
 
-	return b.put(req, "farms", farmName, "actions")
+	return s.put(req, "farms", farmName, "actions")
 }
 
 // StopFarm will stop a running farm.
-func (b *ZapiSession) StopFarm(farmName string) error {
+func (s *ZapiSession) StopFarm(farmName string) error {
 	req := farmAction{Action: "stop"}
 
-	return b.put(req, "farms", farmName, "actions")
+	return s.put(req, "farms", farmName, "actions")
 }
 
 // RestartFarm will restart a running farm.
-func (b *ZapiSession) RestartFarm(farmName string) error {
+func (s *ZapiSession) RestartFarm(farmName string) error {
 	req := farmAction{Action: "restart"}
 
-	return b.put(req, "farms", farmName, "actions")
+	return s.put(req, "farms", farmName, "actions")
 }
 
+// CertificateInfo contains reference information on a certificate.
 type CertificateInfo struct {
 	Filename string `json:"file"`
 	ID       int    `json:"id"`

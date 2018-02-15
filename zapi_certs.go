@@ -24,10 +24,10 @@ func (sv CertificateDetails) String() string {
 }
 
 // GetAllCertificates returns list of all available certificates and CSRs.
-func (b *ZapiSession) GetAllCertificates() ([]CertificateDetails, error) {
+func (s *ZapiSession) GetAllCertificates() ([]CertificateDetails, error) {
 	var result *certListResponse
 
-	err, _ := b.getForEntity(&result, "certificates")
+	err := s.getForEntity(&result, "certificates")
 
 	if err != nil {
 		return nil, err

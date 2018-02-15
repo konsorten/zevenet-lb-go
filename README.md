@@ -1,6 +1,8 @@
-# Zevenet Loadbalancer API for Go
+# Zevenet Loadbalancer for Go
 
-xxxx
+This library provides access to the Zevenet loadbalancer using its ZAPI (REST API) of v3.1.
+
+It is tested using Zevenet Community Edition 5.0 but should probably work with the Enterprise Edition, too.
 
 **[Click here to open the GoDoc documentation.](https://godoc.org/github.com/konsorten/zevenet-lb-go)**
 
@@ -11,9 +13,9 @@ To use the API, simply create a new session:
 ```go
 import zevenet "github.com/konsorten/zevenet-lb-go"
 
-session := zevenet.NewSession("myloadbalancer:444", "zapi-key", nil)
+session := zevenet.Connect("myloadbalancer:444", "zapi-key", nil)
 
-version := session.GetSystemVersion()
+version, _ := session.GetSystemVersion()
 ```
 
 ## ZAPI Key

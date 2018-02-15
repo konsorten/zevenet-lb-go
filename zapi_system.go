@@ -31,10 +31,10 @@ func (sv *SystemVersion) IsCommunityEdition() bool {
 }
 
 // GetSystemVersion returns system version information.
-func (b *ZapiSession) GetSystemVersion() (*SystemVersion, error) {
+func (s *ZapiSession) GetSystemVersion() (*SystemVersion, error) {
 	var result *systemVersionResponse
 
-	err, _ := b.getForEntity(&result, "system", "version")
+	err := s.getForEntity(&result, "system", "version")
 
 	if err != nil {
 		return nil, err

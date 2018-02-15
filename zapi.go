@@ -31,6 +31,11 @@ type ZapiSession struct {
 	ConfigOptions *ConfigOptions
 }
 
+// String returns the session's hostname.
+func (s *ZapiSession) String() string {
+	return s.Host
+}
+
 // APIRequest builds our request before sending it to the server.
 type APIRequest struct {
 	Method      string
@@ -54,8 +59,8 @@ func (r *RequestError) Error() error {
 	return fmt.Errorf("%v", r.Message)
 }
 
-// NewSession sets up our connection to the Zevenet system.
-func NewSession(host, zapiKey string, configOptions *ConfigOptions) *ZapiSession {
+// Connect sets up our connection to the Zevenet system.
+func Connect(host, zapiKey string, configOptions *ConfigOptions) *ZapiSession {
 	var url string
 	if !strings.HasPrefix(host, "http") {
 		url = fmt.Sprintf("https://%s", host)
@@ -79,18 +84,18 @@ func NewSession(host, zapiKey string, configOptions *ConfigOptions) *ZapiSession
 	}
 }
 
-// APICall is used to query the ZAPI.
-func (b *ZapiSession) APICall(options *APIRequest) ([]byte, error) {
+// apiCall is used to query the ZAPI.
+func (s *ZapiSession) apiCall(options *APIRequest) ([]byte, error) {
 	var req *http.Request
 	client := &http.Client{
-		Transport: b.Transport,
-		Timeout:   b.ConfigOptions.APICallTimeout,
+		Transport: s.Transport,
+		Timeout:   s.ConfigOptions.APICallTimeout,
 	}
-	url := fmt.Sprintf("%v/zapi/v%v/zapi.cgi/%v", b.Host, b.ConfigOptions.ZapiVersion, options.URL)
+	url := fmt.Sprintf("%v/zapi/v%v/zapi.cgi/%v", s.Host, s.ConfigOptions.ZapiVersion, options.URL)
 	body := bytes.NewReader([]byte(options.Body))
 	req, _ = http.NewRequest(strings.ToUpper(options.Method), url, body)
 
-	req.Header.Set("ZAPI_KEY", b.ZapiKey)
+	req.Header.Set("ZAPI_KEY", s.ZapiKey)
 
 	// fmt.Println("REQ -- ", options.Method, " ", url, " -- ", options.Body)
 
@@ -109,7 +114,7 @@ func (b *ZapiSession) APICall(options *APIRequest) ([]byte, error) {
 
 	if res.StatusCode >= 400 {
 		if res.Header["Content-Type"][0] == "application/json" {
-			return data, b.checkError(data)
+			return data, s.checkError(data)
 		}
 
 		return data, fmt.Errorf("HTTP %d :: %s", res.StatusCode, string(data[:]))
@@ -119,7 +124,7 @@ func (b *ZapiSession) APICall(options *APIRequest) ([]byte, error) {
 	return data, nil
 }
 
-func (b *ZapiSession) iControlPath(parts []string) string {
+func (s *ZapiSession) iControlPath(parts []string) string {
 	var buffer bytes.Buffer
 	for i, p := range parts {
 		buffer.WriteString(strings.Replace(p, "/", "~", -1))
@@ -131,17 +136,17 @@ func (b *ZapiSession) iControlPath(parts []string) string {
 }
 
 //Generic delete
-func (b *ZapiSession) delete(path ...string) error {
+func (s *ZapiSession) delete(path ...string) error {
 	req := &APIRequest{
 		Method: "delete",
-		URL:    b.iControlPath(path),
+		URL:    s.iControlPath(path),
 	}
 
-	_, callErr := b.APICall(req)
+	_, callErr := s.apiCall(req)
 	return callErr
 }
 
-func (b *ZapiSession) post(body interface{}, path ...string) error {
+func (s *ZapiSession) post(body interface{}, path ...string) error {
 	marshalJSON, err := jsonMarshal(body)
 	if err != nil {
 		return err
@@ -149,16 +154,16 @@ func (b *ZapiSession) post(body interface{}, path ...string) error {
 
 	req := &APIRequest{
 		Method:      "post",
-		URL:         b.iControlPath(path),
+		URL:         s.iControlPath(path),
 		Body:        strings.TrimRight(string(marshalJSON), "\n"),
 		ContentType: "application/json",
 	}
 
-	_, callErr := b.APICall(req)
+	_, callErr := s.apiCall(req)
 	return callErr
 }
 
-func (b *ZapiSession) put(body interface{}, path ...string) error {
+func (s *ZapiSession) put(body interface{}, path ...string) error {
 	marshalJSON, err := jsonMarshal(body)
 	if err != nil {
 		return err
@@ -166,43 +171,43 @@ func (b *ZapiSession) put(body interface{}, path ...string) error {
 
 	req := &APIRequest{
 		Method:      "put",
-		URL:         b.iControlPath(path),
+		URL:         s.iControlPath(path),
 		Body:        strings.TrimRight(string(marshalJSON), "\n"),
 		ContentType: "application/json",
 	}
 
-	_, callErr := b.APICall(req)
+	_, callErr := s.apiCall(req)
 	return callErr
 }
 
 //Get a url and populate an entity. If the entity does not exist (404) then the
 //passed entity will be untouched and false will be returned as the second parameter.
 //You can use this to distinguish between a missing entity or an actual error.
-func (b *ZapiSession) getForEntity(e interface{}, path ...string) (error, bool) {
+func (s *ZapiSession) getForEntity(e interface{}, path ...string) error {
 	req := &APIRequest{
 		Method:      "get",
-		URL:         b.iControlPath(path),
+		URL:         s.iControlPath(path),
 		ContentType: "application/json",
 	}
 
-	resp, err := b.APICall(req)
+	resp, err := s.apiCall(req)
 	if err != nil {
 		var reqError RequestError
 		json.Unmarshal(resp, &reqError)
-		return err, false
+		return err
 	}
 
 	err = json.Unmarshal(resp, e)
 	if err != nil {
-		return err, false
+		return err
 	}
 
-	return nil, true
+	return nil
 }
 
 // checkError handles any errors we get from our API requests. It returns either the
 // message of the error, if any, or nil.
-func (b *ZapiSession) checkError(resp []byte) error {
+func (s *ZapiSession) checkError(resp []byte) error {
 	if len(resp) == 0 {
 		return nil
 	}
