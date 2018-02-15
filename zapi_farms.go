@@ -5,9 +5,28 @@ import (
 	"strings"
 )
 
+// OptionalBool represents an optional boolean having an *undefined/nil* state.
+type OptionalBool string
+
+const (
+	OptionalBool_Nil   OptionalBool = ""
+	OptionalBool_True  OptionalBool = "true"
+	OptionalBool_False OptionalBool = "false"
+)
+
 type genericResponse struct {
 	Description string `json:"description"`
 }
+
+// FarmProfile is an enumeration of possible farm profiles.
+type FarmProfile string
+
+const (
+	FarmProfile_HTTP      FarmProfile = "http"
+	FarmProfile_HTTPS     FarmProfile = "https"
+	FarmProfile_Level4NAT FarmProfile = "l4xnat"
+	FarmProfile_DataLink  FarmProfile = "datalink"
+)
 
 type farmListResponse struct {
 	Description string     `json:"description"`
@@ -17,11 +36,11 @@ type farmListResponse struct {
 // FarmInfo contains the list of all available farms.
 // See https://www.zevenet.com/zapidoc_ce_v3.1/#list-all-farms
 type FarmInfo struct {
-	FarmName    string `json:"farmname"`
-	Profile     string `json:"profile"`
-	Status      string `json:"status"`
-	VirtualIP   string `json:"vip"`
-	VirtualPort int    `json:"vport,string"`
+	FarmName    string      `json:"farmname"`
+	Profile     FarmProfile `json:"profile"`
+	Status      FarmStatus  `json:"status"`
+	VirtualIP   string      `json:"vip"`
+	VirtualPort int         `json:"vport,string"`
 }
 
 // String returns the farm's name and profile.
@@ -48,33 +67,104 @@ type farmDetailsResponse struct {
 	Services    []ServiceDetails `json:"services"`
 }
 
+// FarmCiphers is an enumeration of possible selections of *Ciphers* to be used for an https listener.
+// The custom cipher requires *CiphersCustom* to bet set to an OpenSSL compatible ciphers string.
+type FarmCiphers string
+
+const (
+	FarmCiphers_All    FarmCiphers = "all"
+	FarmCiphers_High   FarmCiphers = "highsecurity"
+	FarmCiphers_Custom FarmCiphers = "customsecurity"
+)
+
+// FarmHTTPVerb is an enumeration of possible *HTTPVerbs* to be used for an http/s listener.
+type FarmHTTPVerb string
+
+const (
+	// FarmHTTPVerb_Standard accepts GET, POST, HEAD
+	FarmHTTPVerb_Standard FarmHTTPVerb = "standardHTTP"
+
+	// FarmHTTPVerb_Extended accepts GET, POST, HEAD, PUT, DELETE
+	FarmHTTPVerb_Extended FarmHTTPVerb = "extendedHTTP"
+
+	// FarmHTTPVerb_WebDAV accepts GET, POST, HEAD, PUT, DELETE, LOCK, UNLOCK, PROPFIND, PROPPATCH, SEARCH, MKCOL, MOVE, COPY, OPTIONS, TRACE, MKACTIVITY, CHECKOUT, MERGE, REPORT
+	FarmHTTPVerb_WebDAV FarmHTTPVerb = "standardWebDAV"
+
+	// FarmHTTPVerb_MicrosoftWebDAV accepts GET, POST, HEAD, PUT, DELETE, LOCK, UNLOCK, PROPFIND, PROPPATCH, SEARCH, MKCOL, MOVE, COPY, OPTIONS, TRACE, MKACTIVITY, CHECKOUT, MERGE, REPORT, SUBSCRIBE, UNSUBSCRIBE, NOTIFY, BPROPFIND, BPROPPATCH, POLL, BMOVE, BCOPY, BDELETE, CONNECT
+	FarmHTTPVerb_MicrosoftWebDAV FarmHTTPVerb = "MSextWebDAV"
+
+	// FarmHTTPVerb_MicrosoftRPC accepts GET, POST, HEAD, PUT, DELETE, LOCK, UNLOCK, PROPFIND, PROPPATCH, SEARCH, MKCOL, MOVE, COPY, OPTIONS, TRACE, MKACTIVITY, CHECKOUT, MERGE, REPORT, SUBSCRIBE, UNSUBSCRIBE, NOTIFY, BPROPFIND, BPROPPATCH, POLL, BMOVE, BCOPY, BDELETE, CONNECT, RPC_IN_DATA, RPC_OUT_DATA
+	FarmHTTPVerb_MicrosoftRPC FarmHTTPVerb = "MSRPCext"
+)
+
+// FarmListener is an enumeration of possible selections of *Listener* values.
+type FarmListener string
+
+const (
+	FarmListener_HTTP  FarmListener = "http"
+	FarmListener_HTTPS FarmListener = "https"
+)
+
+// FarmRewriteLocation is an enumeration of possible selections of *RewriteLocation* values.
+// If it is enabled, the farm is forced to modify the Location: and Content-location: headers in responses to clients with the virtual host.
+type FarmRewriteLocation string
+
+const (
+	FarmRewriteLocation_Enabled      FarmRewriteLocation = "enabled"
+	FarmRewriteLocation_BackendsOnly FarmRewriteLocation = "enabled-backends"
+	FarmRewriteLocation_Disabled     FarmRewriteLocation = "disabled"
+)
+
+// FarmStatus is an enumeration of possible selections of *Status* values.
+type FarmStatus string
+
+const (
+	// FarmStatus_Up means the farm is up and all the backends are working fine.
+	FarmStatus_Up FarmStatus = "up"
+
+	// FarmStatus_Down means the farm is not running. Use *StartFarm()* to start the farm.
+	FarmStatus_Down FarmStatus = "down"
+
+	// FarmStatus_NeedsRestart means the farm is up but it is pending of a restart action. Use *RestartFarm()* to perform the required restart.
+	FarmStatus_NeedsRestart FarmStatus = "needed restart"
+
+	// FarmStatus_Critical means the farm is up and all backends are unreachable or maintenance. This is usually the case for newly created empty farms.
+	FarmStatus_Critical FarmStatus = "critical"
+
+	// FarmStatus_Problem means the farm is up and there are some backend unreachable, but at least one backend is in up status.
+	FarmStatus_Problem FarmStatus = "problem"
+
+	// FarmStatus_Maintenance means the farm is up and there are backends in up status, but at least one backend is in maintenance mode.
+	FarmStatus_Maintenance FarmStatus = "maintenance"
+)
+
 // FarmDetails contains all information regarding a farm and the services.
 // See https://www.zevenet.com/zapidoc_ce_v3.1/#retrieve-farm-by-name
 type FarmDetails struct {
-	Certificates             []CertificateInfo `json:"certlist"`
-	FarmName                 string            `json:"farmname"`
-	CiphersCustom            string            `json:"cipherc,omitempty"`
-	Ciphers                  string            `json:"ciphers,omitempty"`
-	ConnectionTimeoutSeconds int               `json:"contimeout"`
-	DisableSSLv2             bool              `json:"disable_sslv2,string"`
-	DisableSSLv3             bool              `json:"disable_sslv3,string"`
-	DisableTLSv1             bool              `json:"disable_tlsv1,string"`
-	DisableTLSv11            bool              `json:"disable_tlsv1_1,string"`
-	DisableTLSv12            bool              `json:"disable_tlsv1_2,string"`
-	ErrorString414           string            `json:"error414"`
-	ErrorString500           string            `json:"error500"`
-	ErrorString501           string            `json:"error501"`
-	ErrorString503           string            `json:"error503"`
-	HTTPVerbs                string            `json:"httpverb"`
-	Listener                 string            `json:"listener"`
-	RequestTimeoutSeconds    int               `json:"reqtimeout"`
-	ResponseTimeoutSeconds   int               `json:"restimeout"`
-	ResurrectIntervalSeconds int               `json:"resurrectime"`
-	RewriteLocation          string            `json:"rewritelocation"`
-	Status                   string            `json:"status"`
-	VirtualIP                string            `json:"vip"`
-	VirtualPort              int               `json:"vport"`
-	Services                 []ServiceDetails  `json:"services"`
+	Certificates             []CertificateInfo   `json:"certlist"`
+	FarmName                 string              `json:"farmname"`
+	CiphersCustom            string              `json:"cipherc,omitempty"`
+	Ciphers                  FarmCiphers         `json:"ciphers,omitempty"`
+	ConnectionTimeoutSeconds int                 `json:"contimeout"`
+	DisableSSLv2             bool                `json:"disable_sslv2,string"`
+	DisableSSLv3             bool                `json:"disable_sslv3,string"`
+	DisableTLSv1             bool                `json:"disable_tlsv1,string"`
+	DisableTLSv11            bool                `json:"disable_tlsv1_1,string"`
+	DisableTLSv12            bool                `json:"disable_tlsv1_2,string"`
+	ErrorString414           string              `json:"error414"`
+	ErrorString500           string              `json:"error500"`
+	ErrorString501           string              `json:"error501"`
+	ErrorString503           string              `json:"error503"`
+	HTTPVerbs                FarmHTTPVerb        `json:"httpverb"`
+	Listener                 FarmListener        `json:"listener"`
+	RequestTimeoutSeconds    int                 `json:"reqtimeout"`
+	ResponseTimeoutSeconds   int                 `json:"restimeout"`
+	ResurrectIntervalSeconds int                 `json:"resurrectime"`
+	RewriteLocation          FarmRewriteLocation `json:"rewritelocation"`
+	Status                   FarmStatus          `json:"status"`
+	VirtualIP                string              `json:"vip"`
+	VirtualPort              int                 `json:"vport"`
+	Services                 []ServiceDetails    `json:"services"`
 }
 
 // String returns the farm's name and listener.
@@ -84,17 +174,12 @@ func (fd *FarmDetails) String() string {
 
 // IsHTTP checks if the farm has HTTP or HTTPS support enabled.
 func (fd *FarmDetails) IsHTTP() bool {
-	return strings.HasPrefix(fd.Listener, "http")
+	return strings.HasPrefix(string(fd.Listener), "http")
 }
 
 // IsRunning checks if the farm is up and running.
 func (fd *FarmDetails) IsRunning() bool {
-	return fd.Status == "up"
-}
-
-// IsRestartRequired checks if the farm needs to be restartet.
-func (fd *FarmDetails) IsRestartRequired() bool {
-	return fd.Status == "needed restart"
+	return fd.Status == FarmStatus_Up
 }
 
 // GetFarm returns details on a specific farm.
@@ -147,6 +232,7 @@ type farmCreate struct {
 }
 
 // CreateFarmAsHTTP creates a new HTTP farm.
+// A newly created farm is in the *critical* state, due to the lack of services and backends.
 func (s *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtualPort int) (*FarmDetails, error) {
 	// set default HTTP port
 	if virtualPort <= 0 {
@@ -172,6 +258,7 @@ func (s *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtua
 }
 
 // CreateFarmAsHTTPS creates a new HTTPS farm.
+// A newly created farm is in the *critical* state, due to the lack of services and backends.
 func (s *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtualPort int, certFilename string) (*FarmDetails, error) {
 	// set default HTTPS port
 	if virtualPort <= 0 {
@@ -247,8 +334,8 @@ type serviceDetailsResponse struct {
 type ServiceDetails struct {
 	ServiceName                         string           `json:"id"`
 	FarmGuardianEnabled                 bool             `json:"fgenabled,string"`
-	FarmGuardianLogsEnabled             string           `json:"fglog"`
-	FarmGuardianScriptEnabled           string           `json:"fgscript"`
+	FarmGuardianLogsEnabled             OptionalBool     `json:"fglog"`
+	FarmGuardianScriptEnabled           OptionalBool     `json:"fgscript"`
 	FarmGuardianCheckIntervalSeconds    int              `json:"fgtimecheck"`
 	EncryptedBackends                   bool             `json:"httpsb,string"`
 	LastResponseBalancingEnabled        bool             `json:"leastresp,string"`
