@@ -134,7 +134,7 @@ const (
 	// FarmStatus_Problem means the farm is up and there are some backend unreachable, but at least one backend is in up status.
 	FarmStatus_Problem FarmStatus = "problem"
 
-	// FarmStatus_Maintenance means the farm is up and there are backends in up status, but at least one backend is in maintenance mode.
+	// FarmStatus_Maintenance means the farm is up and there are backends in up status, but at least one backend is in maintenance mode. Use *SetServiceMaintenance(false)* on the service.
 	FarmStatus_Maintenance FarmStatus = "maintenance"
 )
 
@@ -285,6 +285,7 @@ func (s *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtu
 }
 
 // UpdateFarm updates the HTTP/S farm.
+// This method does *not* update the *services*. Use *UpdateService()* instead.
 func (s *ZapiSession) UpdateFarm(farm *FarmDetails) error {
 	return s.put(farm, "farms", farm.FarmName)
 }
@@ -330,23 +331,63 @@ type serviceDetailsResponse struct {
 	Params      ServiceDetails `json:"params"`
 }
 
+// ServiceRedirectType is an enumeration of possible selections of *RedirectType* values.
+type ServiceRedirectType string
+
+const (
+	// ServiceRedirectType_Default means the url is taken as an absolute host and path to redirect to.
+	ServiceRedirectType_Default ServiceRedirectType = "default"
+
+	// ServiceRedirectType_Append means the original request path or URI will be appended to the host and path.
+	ServiceRedirectType_Append ServiceRedirectType = "append"
+
+	// ServiceRedirectType_Disabled means the *RedirectURL* field is not set.
+	ServiceRedirectType_Disabled ServiceRedirectType = ""
+)
+
+// ServiceConnPersistenceMode is an enumeration of possible selections of *ConnectionPersistenceMode* values.
+type ServiceConnPersistenceMode string
+
+const (
+	// ServiceConnPersistenceMode_Disabled means no action is taken.
+	ServiceConnPersistenceMode_Disabled ServiceConnPersistenceMode = ""
+
+	// ServiceConnPersistenceMode_IPAddress means the persistence session is done in base of client IP.
+	ServiceConnPersistenceMode_IPAddress ServiceConnPersistenceMode = "IP"
+
+	// ServiceConnPersistenceMode_BasicHeaders means the persistence session is done in base of BASIC headers.
+	ServiceConnPersistenceMode_BasicHeaders ServiceConnPersistenceMode = "BASIC"
+
+	// ServiceConnPersistenceMode_Url means the persistence session is done in base of a field in the URI. Set the query parameter name in *ConnectionPersistenceID*.
+	ServiceConnPersistenceMode_Url ServiceConnPersistenceMode = "URL"
+
+	// ServiceConnPersistenceMode_QueryParameter means the persistence session is done in base of a value at the end of the URI.
+	ServiceConnPersistenceMode_QueryParameter ServiceConnPersistenceMode = "PARM"
+
+	// ServiceConnPersistenceMode_Cookie means the persistence session is done in base of a cookie name, this cookie has to be created by the backends! Set the cookie name in *ConnectionPersistenceID*.
+	ServiceConnPersistenceMode_Cookie ServiceConnPersistenceMode = "COOKIE"
+
+	// ServiceConnPersistenceMode_Header means the persistence session is done in base of a Header name. Set the header name in *ConnectionPersistenceID*.
+	ServiceConnPersistenceMode_Header ServiceConnPersistenceMode = "HEADER"
+)
+
 // ServiceDetails contains all information regarding a single service.
 type ServiceDetails struct {
-	ServiceName                         string           `json:"id"`
-	FarmGuardianEnabled                 bool             `json:"fgenabled,string"`
-	FarmGuardianLogsEnabled             OptionalBool     `json:"fglog"`
-	FarmGuardianScriptEnabled           OptionalBool     `json:"fgscript"`
-	FarmGuardianCheckIntervalSeconds    int              `json:"fgtimecheck"`
-	EncryptedBackends                   bool             `json:"httpsb,string"`
-	LastResponseBalancingEnabled        bool             `json:"leastresp,string"`
-	ConnectionPersistenceMode           string           `json:"persistence"`
-	ConnectionPersistenceID             string           `json:"sessionid"`
-	ConnectionPersistenceTimeoutSeconds int              `json:"ttl"`
-	RedirectURL                         string           `json:"redirect"`
-	RedirectType                        string           `json:"redirecttype"`
-	URLPattern                          string           `json:"urlp"`
-	HostPattern                         string           `json:"vhost"`
-	Backends                            []BackendDetails `json:"backends"`
+	ServiceName                         string                     `json:"id"`
+	FarmGuardianEnabled                 bool                       `json:"fgenabled,string"`
+	FarmGuardianLogsEnabled             OptionalBool               `json:"fglog"`
+	FarmGuardianScriptEnabled           OptionalBool               `json:"fgscript"`
+	FarmGuardianCheckIntervalSeconds    int                        `json:"fgtimecheck"`
+	EncryptedBackends                   bool                       `json:"httpsb,string"`
+	LastResponseBalancingEnabled        bool                       `json:"leastresp,string"`
+	ConnectionPersistenceMode           ServiceConnPersistenceMode `json:"persistence"`
+	ConnectionPersistenceID             string                     `json:"sessionid"`
+	ConnectionPersistenceTimeoutSeconds int                        `json:"ttl"`
+	RedirectURL                         string                     `json:"redirect"`
+	RedirectType                        ServiceRedirectType        `json:"redirecttype"`
+	URLPattern                          string                     `json:"urlp"`
+	HostPattern                         string                     `json:"vhost"`
+	Backends                            []BackendDetails           `json:"backends"`
 }
 
 // String returns the services' name.
@@ -359,14 +400,31 @@ type backendDetailsResponse struct {
 	Params      BackendDetails `json:"params"`
 }
 
+// BackendStatus is an enumeration of possible selections of *Status* values.
+type BackendStatus string
+
+const (
+	// BackendStatus_Up means the backend is ready to receive connections.
+	BackendStatus_Up BackendStatus = "up"
+
+	// BackendStatus_Down means the backend is not working.
+	BackendStatus_Down BackendStatus = "down"
+
+	// BackendStatus_Maintenance means backend is marked as not ready for receiving connections by the administrator. Use *SetServiceMaintenance(false)* on the service.
+	BackendStatus_Maintenance BackendStatus = "maintenance"
+
+	// BackendStatus_Undefined means the backend status has been not checked.
+	BackendStatus_Undefined BackendStatus = "undefined"
+)
+
 // BackendDetails contains all information regarding a single backend server.
 type BackendDetails struct {
-	ID             int    `json:"id"`
-	IPAddress      string `json:"ip"`
-	Port           int    `json:"port"`
-	Status         string `json:"status"`
-	TimeoutSeconds *int   `json:"timeout"`
-	Weight         *int   `json:"weight"`
+	ID             int           `json:"id"`
+	IPAddress      string        `json:"ip"`
+	Port           int           `json:"port"`
+	Status         BackendStatus `json:"status"`
+	TimeoutSeconds *int          `json:"timeout"`
+	Weight         *int          `json:"weight"`
 }
 
 // String returns the backend's IP, port, and ID.
