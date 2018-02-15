@@ -139,6 +139,49 @@ func TestRoundtripHTTPFarm(t *testing.T) {
 		t.Fatalf("Expected the status message to contain '%v', but got '%v'", farm.ErrorString503, resBody)
 	}
 
+	// add a service
+	service, err := session.CreateService(farm.FarmName, "service1")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Service: %v", service)
+
+	// add a backend
+	backend, err := session.CreateBackend(farm.FarmName, service.ServiceName, "176.58.123.25", 80)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Backend: %v", backend)
+
+	// restart the farm
+	err = session.RestartFarm(farm.FarmName)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// try to connect
+	resBodyExpect, _, _ := webGet("http://176.58.123.25")
+	resBody, resCode, err = webGet(fmt.Sprintf("http://%v:%v", farm.VirtualIP, farm.VirtualPort))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check if the return code matches
+	if resCode != 200 {
+		t.Fatalf("Expected HTTP status code 200, but got %v", resCode)
+	}
+
+	// check if the message matches
+	if !strings.Contains(resBody, resBodyExpect) {
+		t.Fatalf("Expected the status message to contain '%v', but got '%v'", resBodyExpect, resBody)
+	}
+
 	// done, delete the farm
 	deleted, err := session.DeleteFarm(farm.FarmName)
 
@@ -218,6 +261,49 @@ func TestRoundtripHTTPSFarm(t *testing.T) {
 	// check if the message matches
 	if !strings.Contains(resBody, farm.ErrorString503) {
 		t.Fatalf("Expected the status message to contain '%v', but got '%v'", farm.ErrorString503, resBody)
+	}
+
+	// add a service
+	service, err := session.CreateService(farm.FarmName, "service1")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Service: %v", service)
+
+	// add a backend
+	backend, err := session.CreateBackend(farm.FarmName, service.ServiceName, "176.58.123.25", 80)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Backend: %v", backend)
+
+	// restart the farm
+	err = session.RestartFarm(farm.FarmName)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// try to connect
+	resBodyExpect, _, _ := webGet("http://176.58.123.25")
+	resBody, resCode, err = webGet(fmt.Sprintf("https://%v:%v", farm.VirtualIP, farm.VirtualPort))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check if the return code matches
+	if resCode != 200 {
+		t.Fatalf("Expected HTTP status code 200, but got %v", resCode)
+	}
+
+	// check if the message matches
+	if !strings.Contains(resBody, resBodyExpect) {
+		t.Fatalf("Expected the status message to contain '%v', but got '%v'", resBodyExpect, resBody)
 	}
 
 	// done, delete the farm

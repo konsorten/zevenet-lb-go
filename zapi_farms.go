@@ -182,6 +182,17 @@ func (fd *FarmDetails) IsRunning() bool {
 	return fd.Status == FarmStatus_Up
 }
 
+// GetService retrieves a service by its name, or returns *nil* if not found.
+func (fd *FarmDetails) GetService(serviceName string) (*ServiceDetails, error) {
+	for _, s := range fd.Services {
+		if s.ServiceName == serviceName {
+			return &s, nil
+		}
+	}
+
+	return nil, nil
+}
+
 // GetFarm returns details on a specific farm.
 func (s *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
 	var result *farmDetailsResponse
@@ -233,6 +244,7 @@ type farmCreate struct {
 
 // CreateFarmAsHTTP creates a new HTTP farm.
 // A newly created farm is in the *critical* state, due to the lack of services and backends.
+// The *virtualPort* is optional and can be 0, using port 80 as default.
 func (s *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtualPort int) (*FarmDetails, error) {
 	// set default HTTP port
 	if virtualPort <= 0 {
@@ -259,6 +271,7 @@ func (s *ZapiSession) CreateFarmAsHTTP(farmName string, virtualIP string, virtua
 
 // CreateFarmAsHTTPS creates a new HTTPS farm.
 // A newly created farm is in the *critical* state, due to the lack of services and backends.
+// The *virtualPort* is optional and can be 0, using port 443 as default.
 func (s *ZapiSession) CreateFarmAsHTTPS(farmName string, virtualIP string, virtualPort int, certFilename string) (*FarmDetails, error) {
 	// set default HTTPS port
 	if virtualPort <= 0 {
@@ -395,6 +408,55 @@ func (sd ServiceDetails) String() string {
 	return sd.ServiceName
 }
 
+// GetBackend retrieves a backend by its ID, or returns *nil* if not found.
+func (sd *ServiceDetails) GetBackend(backendID int) (*BackendDetails, error) {
+	for _, s := range sd.Backends {
+		if s.ID == backendID {
+			return &s, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// GetBackendByAddress retrieves a backend by its IP address and port, or returns *nil* if not found. The *port* is optional and can be 0.
+func (sd *ServiceDetails) GetBackendByAddress(ipAddress string, port int) (*BackendDetails, error) {
+	for _, s := range sd.Backends {
+		if s.IPAddress == ipAddress && (port <= 0 || s.Port == port) {
+			return &s, nil
+		}
+	}
+
+	return nil, nil
+}
+
+type serviceCreate struct {
+	ServiceName string `json:"id"`
+}
+
+// CreateService creates a new service on a farm.
+func (s *ZapiSession) CreateService(farmName string, serviceName string) (*ServiceDetails, error) {
+	// create the service
+	req := serviceCreate{
+		ServiceName: serviceName,
+	}
+
+	err := s.post(req, "farms", farmName, "services")
+
+	if err != nil {
+		return nil, err
+	}
+
+	// retrieve status
+	farm, err := s.GetFarm(farmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return farm.GetService(serviceName)
+}
+
 type backendDetailsResponse struct {
 	Description string         `json:"description"`
 	Params      BackendDetails `json:"params"`
@@ -427,7 +489,42 @@ type BackendDetails struct {
 	Weight         *int          `json:"weight"`
 }
 
-// String returns the backend's IP, port, and ID.
+// String returns the backend's IP, port, ID, and status.
 func (bd BackendDetails) String() string {
-	return fmt.Sprintf("%v:%v (ID: %v)", bd.IPAddress, bd.Port, bd.ID)
+	return fmt.Sprintf("%v:%v (ID: %v, Status: %v)", bd.IPAddress, bd.Port, bd.ID, bd.Status)
+}
+
+type backendCreate struct {
+	IPAddress string `json:"ip"`
+	Port      int    `json:"port"`
+}
+
+// CreateBackend creates a new backend on a service on a farm.
+func (s *ZapiSession) CreateBackend(farmName string, serviceName string, backendIP string, backendPort int) (*BackendDetails, error) {
+	// create the backend
+	req := backendCreate{
+		IPAddress: backendIP,
+		Port:      backendPort,
+	}
+
+	err := s.post(req, "farms", farmName, "services", serviceName, "backends")
+
+	if err != nil {
+		return nil, err
+	}
+
+	// retrieve status
+	farm, err := s.GetFarm(farmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	service, err := farm.GetService(serviceName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return service.GetBackendByAddress(backendIP, backendPort)
 }
