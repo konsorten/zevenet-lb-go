@@ -9,7 +9,6 @@ func ExampleConnect() {
 	version, _ := session.GetSystemVersion()
 
 	fmt.Println(version)
-	// Output: ZCE 5 (v5.0)
 }
 
 // This is how to retrieve a specific farm. In this case the first farm that exists.
@@ -30,7 +29,6 @@ func ExampleZapiSession_CreateFarmAsHTTP() {
 	farm, _ := session.CreateFarmAsHTTP("mynewfarm", "10.10.10.10", 80)
 
 	fmt.Println(farm)
-	// Output: mynewfarm (http)
 }
 
 // This is how to create a new HTTP farm *with* SSL support, using the Zevenet default certificate.
@@ -40,5 +38,4 @@ func ExampleZapiSession_CreateFarmAsHTTPS() {
 	farm, _ := session.CreateFarmAsHTTPS("mynewfarm", "10.10.10.10", 443, "zencert.pem")
 
 	fmt.Println(farm)
-	// Output: mynewfarm (https)
 }
