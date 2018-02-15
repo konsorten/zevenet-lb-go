@@ -182,6 +182,20 @@ func TestRoundtripHTTPFarm(t *testing.T) {
 		t.Fatalf("Expected the status message to contain '%v', but got '%v'", resBodyExpect, resBody)
 	}
 
+	// enable maintenance
+	err = session.SetBackendMaintenance(backend, true, true)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// disable maintenance
+	err = session.SetBackendMaintenance(backend, false, false)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// cleaning up, delete the backend
 	deleted, err := session.DeleteBackend(farm.FarmName, service.ServiceName, backend.ID)
 

@@ -625,3 +625,36 @@ func (s *ZapiSession) CreateBackend(farmName string, serviceName string, backend
 func (s *ZapiSession) UpdateBackend(backend *BackendDetails) error {
 	return s.put(backend, "farms", backend.FarmName, "services", backend.ServiceName, "backends", strconv.Itoa(backend.ID))
 }
+
+type backendMaintenance struct {
+	Action string `json:"action"`
+	Mode   string `json:"mode,omitempty"`
+}
+
+// SetBackendMaintenance updates a backend on a service on a farm.
+// To cut and disconnect any existing connections when enabling maintenance, set *cutExistingConnections* to true.
+func (s *ZapiSession) SetBackendMaintenance(backend *BackendDetails, enableMaintenance bool, cutExistingConnections bool) error {
+	var cmd backendMaintenance
+
+	if enableMaintenance {
+		var mode string
+
+		if cutExistingConnections {
+			mode = "cut"
+		} else {
+			mode = "drain"
+		}
+
+		cmd = backendMaintenance{
+			Action: "maintenance",
+			Mode:   mode,
+		}
+	} else {
+		// recover from maintenance
+		cmd = backendMaintenance{
+			Action: "up",
+		}
+	}
+
+	return s.put(cmd, "farms", backend.FarmName, "services", backend.ServiceName, "backends", strconv.Itoa(backend.ID), "maintenance")
+}
