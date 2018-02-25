@@ -24,7 +24,7 @@ func createTestSessionEx(t *testing.T, apiKey string) *ZapiSession {
 	host := os.Getenv("ZAPI_HOSTNAME")
 
 	if host == "" {
-		host = "lb002.konsorten.net:444"
+		host = "lb-cluster.konsorten.net:444"
 	}
 
 	// create the session
