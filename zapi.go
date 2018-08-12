@@ -23,6 +23,15 @@ type ConfigOptions struct {
 	ZapiVersion    string
 }
 
+func (opt *ConfigOptions) setDefaults(def *ConfigOptions) {
+	if opt.APICallTimeout <= 0 {
+		opt.APICallTimeout = def.APICallTimeout
+	}
+	if opt.ZapiVersion == "" {
+		opt.ZapiVersion = def.ZapiVersion
+	}
+}
+
 // ZapiSession is a container for our session state.
 type ZapiSession struct {
 	Host          string
@@ -69,6 +78,8 @@ func Connect(host, zapiKey string, configOptions *ConfigOptions) (*ZapiSession, 
 	}
 	if configOptions == nil {
 		configOptions = defaultConfigOptions
+	} else {
+		configOptions.setDefaults(defaultConfigOptions)
 	}
 
 	// create the session

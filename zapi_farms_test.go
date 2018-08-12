@@ -311,6 +311,11 @@ func TestRoundtripHTTPSFarm(t *testing.T) {
 	// enable backend re-encryption
 	service.EncryptedBackends = true
 
+	// enable persistence
+	service.ConnectionPersistenceMode = ServiceConnPersistenceMode_Cookie
+	service.ConnectionPersistenceID = "AUTH_SESSION_ID"
+	service.ConnectionPersistenceTimeoutSeconds = 120
+
 	err = session.UpdateService(service)
 
 	if err != nil {

@@ -27,8 +27,11 @@ func createTestSessionEx(t *testing.T, apiKey string) *ZapiSession {
 		host = "lb-cluster.konsorten.net:444"
 	}
 
+	// retrieve api version
+	zapiVersion := os.Getenv("ZAPI_VERSION")
+
 	// create the session
-	session, err := Connect(host, apiKey, nil)
+	session, err := Connect(host, apiKey, &ConfigOptions{ZapiVersion: zapiVersion})
 
 	if err != nil {
 		t.Fatalf("Failed to connect to Zevenet API: %v", err)

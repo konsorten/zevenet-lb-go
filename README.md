@@ -2,7 +2,7 @@
 
 This library provides access to the Zevenet loadbalancer using its ZAPI (REST API) of v3.1.
 
-It is tested using Zevenet Community Edition 5.0 but should probably work with the Enterprise Edition, too.
+It is tested using the Zevenet REST API v3.1 (both Community Edition 5.0 and Enterprise Edition 5.2).
 
 **[Click here to open the GoDoc documentation.](https://godoc.org/github.com/konsorten/zevenet-lb-go)**
 
