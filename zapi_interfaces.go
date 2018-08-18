@@ -21,7 +21,7 @@ type NICInfo struct {
 func (s *ZapiSession) GetAllNICs() ([]NICInfo, error) {
 	var result *nicListResponse
 
-	err := s.getForEntity(&result, "interfaces/nic")
+	err := s.getForEntity(&result, "interfaces", "nic")
 
 	if err != nil {
 		return nil, err
