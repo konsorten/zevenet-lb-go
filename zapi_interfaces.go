@@ -2,7 +2,7 @@ package zevenetlb
 
 type nicListResponse struct {
 	Description string    `json:"description"`
-	Params      []NICInfo `json:"params"`
+	Interfaces  []NICInfo `json:"interfaces"`
 }
 
 // NICInfo contains the list of all available farms.
@@ -27,5 +27,5 @@ func (s *ZapiSession) GetAllNICs() ([]NICInfo, error) {
 		return nil, err
 	}
 
-	return result.Params, nil
+	return result.Interfaces, nil
 }
