@@ -5,7 +5,7 @@ type nicListResponse struct {
 	Interfaces  []NICInfo `json:"interfaces"`
 }
 
-// NICInfo contains the list of all available farms.
+// NICInfo contains the list of all available NICs.
 // See https://www.zevenet.com/zapidoc_ce_v3.1/#list-nic-interfaces
 type NICInfo struct {
 	IP      string `json:"ip"`
