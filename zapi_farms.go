@@ -256,6 +256,28 @@ type farmCreate struct {
 	VirtualPort int    `json:"vport"`
 }
 
+// CreateFarmAsL4xNat creates a new L4Nat farm.
+// A newly created farm is in the *critical* state, due to the lack of services and backends.
+func (s *ZapiSession) CreateFarmAsL4xNat(farmName string, virtualIP string, virtualPort int) (*FarmDetails, error) {
+
+	// create the farm
+	req := farmCreate{
+		FarmName:    farmName,
+		Profile:     "l4xnat",
+		VirtualIP:   virtualIP,
+		VirtualPort: virtualPort,
+	}
+
+	err := s.post(req, "farms")
+
+	if err != nil {
+		return nil, err
+	}
+
+	// retrieve status
+	return s.GetFarm(farmName)
+}
+
 // CreateFarmAsHTTP creates a new HTTP farm.
 // A newly created farm is in the *critical* state, due to the lack of services and backends.
 // The *virtualPort* is optional and can be 0, using port 80 as default.
