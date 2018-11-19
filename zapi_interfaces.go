@@ -1,6 +1,8 @@
 package zevenetlb
 
-import "strings"
+import (
+	"strings"
+)
 
 //
 // Network Interfaces

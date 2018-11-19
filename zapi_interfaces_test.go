@@ -1,13 +1,14 @@
 package zevenetlb
 
 import (
+	"runtime"
 	"testing"
 
 	ping "github.com/sparrc/go-ping"
 )
 
 const (
-	unitTestVirtIntName = "eth0:test"
+	unitTestVirtIntName = "eth0:unittest"
 	unitTestVirtIntIP   = "10.209.0.31"
 )
 
@@ -23,7 +24,6 @@ func TestGetAllNICs(t *testing.T) {
 	if len(res) <= 0 {
 		t.Fatal("No NICs returned")
 	}
-
 }
 
 func TestRoundtripVirtInt(t *testing.T) {
@@ -50,7 +50,11 @@ func TestRoundtripVirtInt(t *testing.T) {
 	// try to connect
 	pinger, err := ping.NewPinger(vint.IP)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
+	}
+
+	if runtime.GOOS == "windows" {
+		pinger.SetPrivileged(true)
 	}
 
 	pinger.Count = 3
