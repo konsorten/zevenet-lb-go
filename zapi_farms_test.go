@@ -95,14 +95,14 @@ func TestRoundtripHTTPFarm(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// create the new virtInt
-	vint, err := session.CreateVirtInt(unitTestVirtIntName, unitTestVirtualIP)
+	// create the new virtualInterface
+	vint, err := session.CreateVirtualInterface(unitTestVirtualInterfaceName, unitTestVirtualIP)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer session.DeleteVirtInt(vint.Name)
+	defer session.DeleteVirtualInterface(vint.Name)
 
 	// create the new farm
 	farm, err := session.CreateFarmAsHTTP(unitTestFarmName, unitTestVirtualIP, 0)
@@ -264,14 +264,14 @@ func TestRoundtripHTTPSFarm(t *testing.T) {
 
 	t.Logf("Using certificate: %v", certName)
 
-	// create the new virtInt
-	vint, err := session.CreateVirtInt(unitTestVirtIntName, unitTestVirtualIP)
+	// create the new virtualInterface
+	vint, err := session.CreateVirtualInterface(unitTestVirtualInterfaceName, unitTestVirtualIP)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer session.DeleteVirtInt(vint.Name)
+	defer session.DeleteVirtualInterface(vint.Name)
 
 	// create the new farm
 	farm, err := session.CreateFarmAsHTTPS(unitTestFarmName, unitTestVirtualIP, 0, certName)

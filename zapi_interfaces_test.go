@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	unitTestVirtIntName = "eth0:unittest"
-	unitTestVirtIntIP   = "10.209.0.31"
+	unitTestVirtualInterfaceName = "eth0:unittest"
+	unitTestVirtualInterfaceIP   = "10.209.0.31"
 )
 
-func TestGetAllNICs(t *testing.T) {
+func TestGetAllNetworkInterfaces(t *testing.T) {
 	session := createTestSession(t)
 
-	res, err := session.GetAllNICs()
+	res, err := session.GetAllNetworkInterfaces()
 
 	if err != nil {
 		t.Fatal(err)
@@ -26,24 +26,38 @@ func TestGetAllNICs(t *testing.T) {
 	}
 }
 
-func TestRoundtripVirtInt(t *testing.T) {
+func TestGetAllVirtualInterfaces(t *testing.T) {
 	session := createTestSession(t)
 
-	// ensure the virtInt does not exist
-	_, err := session.DeleteVirtInt(unitTestVirtIntName)
+	res, err := session.GetAllVirtualInterfaces()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// create the new virtInt
-	vint, err := session.CreateVirtInt(unitTestVirtIntName, unitTestVirtIntIP)
+	if len(res) <= 0 {
+		t.Fatal("No NICs returned")
+	}
+}
+
+func TestRoundtripVirtualInterface(t *testing.T) {
+	session := createTestSession(t)
+
+	// ensure the virtualInterface does not exist
+	_, err := session.DeleteVirtualInterface(unitTestVirtualInterfaceName)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer session.DeleteVirtInt(vint.Name)
+	// create the new virtualInterface
+	vint, err := session.CreateVirtualInterface(unitTestVirtualInterfaceName, unitTestVirtualInterfaceIP)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer session.DeleteVirtualInterface(vint.Name)
 
 	t.Logf("New Int: %v, Status: %v", vint.Name, vint.Status)
 
@@ -63,8 +77,8 @@ func TestRoundtripVirtInt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// done, delete the virtInt
-	deleted, err := session.DeleteVirtInt(vint.Name)
+	// done, delete the virtualInterface
+	deleted, err := session.DeleteVirtualInterface(vint.Name)
 
 	if err != nil {
 		t.Fatal(err)

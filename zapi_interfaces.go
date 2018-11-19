@@ -9,13 +9,13 @@ import (
 //
 
 type nicListResponse struct {
-	Description string    `json:"description"`
-	Interfaces  []NICInfo `json:"interfaces"`
+	Description string                 `json:"description"`
+	Interfaces  []NetworkInterfaceInfo `json:"interfaces"`
 }
 
-// NICInfo contains the list of all available NICs.
+// NetworkInterfaceInfo contains the list of all available NICs.
 // See https://www.zevenet.com/zapidoc_ce_v3.1/#list-nic-interfaces
-type NICInfo struct {
+type NetworkInterfaceInfo struct {
 	IP      string `json:"ip"`
 	HasVlan string `json:"has_vlan"`
 	Netmask string `json:"netmask"`
@@ -25,8 +25,8 @@ type NICInfo struct {
 	Status  string `json:"status"`
 }
 
-// GetAllNICs returns list os all available NICs.
-func (s *ZapiSession) GetAllNICs() ([]NICInfo, error) {
+// GetAllNetworkInterfaces returns list os all available NICs.
+func (s *ZapiSession) GetAllNetworkInterfaces() ([]NetworkInterfaceInfo, error) {
 	var result *nicListResponse
 
 	err := s.getForEntity(&result, "interfaces", "nic")
@@ -42,14 +42,14 @@ func (s *ZapiSession) GetAllNICs() ([]NICInfo, error) {
 // Virtual Interfaces
 //
 
-type virtIntListResponse struct {
-	Description string        `json:"description"`
-	Interfaces  []VirtIntInfo `json:"interfaces"`
+type virtualInterfaceListResponse struct {
+	Description string                 `json:"description"`
+	Interfaces  []VirtualInterfaceInfo `json:"interfaces"`
 }
 
-// VirtIntInfo contains the list of all available virtual Interfaces.
+// VirtualInterfaceInfo contains the list of all available virtual Interfaces.
 // See https://www.zevenet.com/zapidoc_ce_v3.1/#list-virtual-interfaces
-type VirtIntInfo struct {
+type VirtualInterfaceInfo struct {
 	IP      string `json:"ip"`
 	Parent  string `json:"parent"`
 	Netmask string `json:"netmask"`
@@ -59,9 +59,9 @@ type VirtIntInfo struct {
 	Status  string `json:"status"`
 }
 
-// GetAllVirtInts returns list os all available NICs.
-func (s *ZapiSession) GetAllVirtInts() ([]VirtIntInfo, error) {
-	var result *virtIntListResponse
+// GetAllVirtualInterfaces returns list os all available NICs.
+func (s *ZapiSession) GetAllVirtualInterfaces() ([]VirtualInterfaceInfo, error) {
+	var result *virtualInterfaceListResponse
 
 	err := s.getForEntity(&result, "interfaces", "virtual")
 
@@ -72,14 +72,14 @@ func (s *ZapiSession) GetAllVirtInts() ([]VirtIntInfo, error) {
 	return result.Interfaces, nil
 }
 
-type virtIntDetailsResponse struct {
-	Description string         `json:"description"`
-	Interface   VirtIntDetails `json:"interface"`
+type virtualInterfaceDetailsResponse struct {
+	Description string                  `json:"description"`
+	Interface   VirtualInterfaceDetails `json:"interface"`
 }
 
-// VirtIntDetails contains all information regarding a virtual Interface.
+// VirtualInterfaceDetails contains all information regarding a virtual Interface.
 // See https://www.zevenet.com/zapidoc_ce_v3.1/#retrieve-virtual-interface
-type VirtIntDetails struct {
+type VirtualInterfaceDetails struct {
 	IP      string `json:"ip"`
 	Netmask string `json:"netmask"`
 	Gateway string `json:"gateway"`
@@ -88,14 +88,14 @@ type VirtIntDetails struct {
 	Status  string `json:"status"`
 }
 
-// GetVirtInt returns details on a specific virtual Interface.
-func (s *ZapiSession) GetVirtInt(virtIntName string) (*VirtIntDetails, error) {
-	var result *virtIntDetailsResponse
+// GetVirtualInterface returns details on a specific virtual Interface.
+func (s *ZapiSession) GetVirtualInterface(virtualInterfaceName string) (*VirtualInterfaceDetails, error) {
+	var result *virtualInterfaceDetailsResponse
 
-	err := s.getForEntity(&result, "interfaces", "virtual", virtIntName)
+	err := s.getForEntity(&result, "interfaces", "virtual", virtualInterfaceName)
 
 	if err != nil {
-		// virtInt not found?
+		// virtualInterface not found?
 		if v, ok := err.(RequestError); ok {
 			if strings.Contains(v.Message, "not found") {
 				return nil, nil
@@ -108,35 +108,35 @@ func (s *ZapiSession) GetVirtInt(virtIntName string) (*VirtIntDetails, error) {
 	return &result.Interface, nil
 }
 
-// DeleteVirtInt will delete an existing virtual Interface (or do nothing if missing)
-func (s *ZapiSession) DeleteVirtInt(virtIntName string) (bool, error) {
-	// retrieve virtInt details
-	virtInt, err := s.GetVirtInt(virtIntName)
+// DeleteVirtualInterface will delete an existing virtual Interface (or do nothing if missing)
+func (s *ZapiSession) DeleteVirtualInterface(virtualInterfaceName string) (bool, error) {
+	// retrieve virtualInterface details
+	virtualInterface, err := s.GetVirtualInterface(virtualInterfaceName)
 
 	if err != nil {
 		return false, err
 	}
 
 	// farm does not exist?
-	if virtInt == nil {
+	if virtualInterface == nil {
 		return false, nil
 	}
 
 	// delete the farm
-	return true, s.delete("interfaces", "virtual", virtIntName)
+	return true, s.delete("interfaces", "virtual", virtualInterfaceName)
 }
 
-type virtIntCreate struct {
+type virtualInterfaceCreate struct {
 	IP   string `json:"ip"`
 	Name string `json:"name"`
 }
 
-// CreateVirtInt creates a new virtual Interface.
-func (s *ZapiSession) CreateVirtInt(virtIntName string, virtualIP string) (*VirtIntDetails, error) {
+// CreateVirtualInterface creates a new virtual Interface.
+func (s *ZapiSession) CreateVirtualInterface(virtualInterfaceName string, virtualIP string) (*VirtualInterfaceDetails, error) {
 
-	req := virtIntCreate{
+	req := virtualInterfaceCreate{
 		IP:   virtualIP,
-		Name: virtIntName,
+		Name: virtualInterfaceName,
 	}
 
 	err := s.post(req, "interfaces", "virtual")
@@ -146,5 +146,5 @@ func (s *ZapiSession) CreateVirtInt(virtIntName string, virtualIP string) (*Virt
 	}
 
 	// retrieve status
-	return s.GetVirtInt(virtIntName)
+	return s.GetVirtualInterface(virtualInterfaceName)
 }
