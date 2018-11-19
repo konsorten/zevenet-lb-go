@@ -57,15 +57,16 @@ type APIRequest struct {
 type RequestError struct {
 	Message     string `json:"message,omitempty"`
 	Description string `json:"description,omitempty"`
+	Response    string
 }
 
 // Error returns the error message.
-func (r *RequestError) Error() error {
+func (r RequestError) Error() string {
 	if r.Description != "" {
-		return fmt.Errorf("%v failed: %v", r.Description, r.Message)
+		return fmt.Sprintf("%v failed: %v", r.Description, r.Message)
 	}
 
-	return fmt.Errorf("%v", r.Message)
+	return fmt.Sprintf("%v", r.Message)
 }
 
 // Connect sets up our connection to the Zevenet system.
@@ -231,8 +232,6 @@ func (s *ZapiSession) getForEntity(e interface{}, path ...string) error {
 
 	resp, err := s.apiCall(req)
 	if err != nil {
-		var reqError RequestError
-		json.Unmarshal(resp, &reqError)
 		return err
 	}
 
@@ -258,12 +257,9 @@ func (s *ZapiSession) checkError(resp []byte) error {
 		return fmt.Errorf("%s\n%s", err.Error(), string(resp[:]))
 	}
 
-	err = reqError.Error()
-	if err != nil {
-		return err
-	}
+	reqError.Response = string(resp)
 
-	return nil
+	return reqError
 }
 
 // jsonMarshal specifies an encoder with 'SetEscapeHTML' set to 'false' so that <, >, and & are not escaped. https://golang.org/pkg/encoding/json/#Marshal

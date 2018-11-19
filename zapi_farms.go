@@ -202,8 +202,10 @@ func (s *ZapiSession) GetFarm(farmName string) (*FarmDetails, error) {
 
 	if err != nil {
 		// farm not found?
-		if strings.Contains(err.Error(), "Farm not found") {
-			return nil, nil
+		if v, ok := err.(RequestError); ok {
+			if strings.Contains(v.Message, "not found") {
+				return nil, nil
+			}
 		}
 
 		return nil, err

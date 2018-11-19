@@ -94,8 +94,10 @@ func (s *ZapiSession) GetVirtInt(virtIntName string) (*VirtIntDetails, error) {
 
 	if err != nil {
 		// virtInt not found?
-		if strings.Contains(err.Error(), "VirtInt not found") {
-			return nil, nil
+		if v, ok := err.(RequestError); ok {
+			if strings.Contains(v.Message, "not found") {
+				return nil, nil
+			}
 		}
 
 		return nil, err
